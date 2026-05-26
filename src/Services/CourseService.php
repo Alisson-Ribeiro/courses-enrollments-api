@@ -34,9 +34,9 @@ class CourseService
         $this->repository->delete($id);
     }
 
-    public function listWithAvailableClasses(array $filters = []): array
+    public function listWithAvailableClasses(array $filters = [], int $page = 1, int $perPage = 15): array
     {
-        return $this->repository->findAllWithAvailableClasses($filters);
+        return $this->repository->findAllWithAvailableClasses($filters, $page, $perPage);
     }
 
     private function findOrFail(int $id): array

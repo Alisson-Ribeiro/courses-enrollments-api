@@ -11,6 +11,7 @@ use App\Controllers\UserController;
 use App\Exceptions\BusinessRuleException;
 use App\Exceptions\NotFoundException;
 use App\Exceptions\ValidationException;
+use App\Helpers\RateLimiter;
 use App\Helpers\Response;
 use App\Router;
 
@@ -23,6 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
+
+RateLimiter::check();
 
 $router = new Router();
 

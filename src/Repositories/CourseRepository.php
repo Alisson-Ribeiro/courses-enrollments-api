@@ -68,7 +68,7 @@ class CourseRepository
         return $stmt->fetch() ?: null;
     }
 
-    public function findAllWithAvailableClasses(array $filters = []): array
+    public function findAllWithAvailableClasses(array $filters = [], int $page = 1, int $perPage = 15): array
     {
         $params = [];
         $where  = ["cc.status = 'disponivel'", 'CURRENT_DATE BETWEEN cc.start_date AND cc.end_date'];
@@ -84,6 +84,19 @@ class CourseRepository
         }
 
         $whereClause = 'WHERE ' . implode(' AND ', $where);
+
+        $countStmt = $this->pdo->prepare("
+            SELECT COUNT(DISTINCT c.id)
+            FROM courses c
+            INNER JOIN course_classes cc ON cc.course_id = c.id
+            {$whereClause}
+        ");
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $offset = ($page - 1) * $perPage;
+        $params['limit']  = $perPage;
+        $params['offset'] = $offset;
 
         $sql = "
             SELECT
@@ -110,15 +123,18 @@ class CourseRepository
             {$whereClause}
             GROUP BY c.id
             ORDER BY c.title
+            LIMIT :limit OFFSET :offset
         ";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
         $rows = $stmt->fetchAll();
 
-        return array_map(function (array $row) {
+        $data = array_map(function (array $row) {
             $row['classes'] = json_decode($row['classes'], true);
             return $row;
         }, $rows);
+
+        return ['data' => $data, 'total' => $total];
     }
 }
