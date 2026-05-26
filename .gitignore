@@ -1,0 +1,27 @@
+# Dependências do Composer
+/vendor/
+
+# Variáveis de ambiente (contém senhas e configs sensíveis)
+.env
+
+# Cache e cobertura de testes do PHPUnit
+.phpunit.cache/
+.phpunit.result.cache
+/coverage/
+
+# Logs
+*.log
+/logs/
+
+# Arquivos de sistema do Windows
+Thumbs.db
+desktop.ini
+
+# Arquivos de sistema do macOS
+.DS_Store
+
+# IDEs e editores
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -1,0 +1,613 @@
+openapi: "3.0.3"
+info:
+  title: Courses API
+  description: API REST para gerenciamento de cursos, turmas e matrículas de alunos.
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8080/api
+    description: Ambiente local (Docker)
+
+tags:
+  - name: Cursos
+  - name: Turmas
+  - name: Usuários
+  - name: Matrículas
+
+paths:
+  /courses:
+    get:
+      tags: [Cursos]
+      summary: Listar cursos com turmas disponíveis
+      parameters:
+        - in: query
+          name: title
+          schema:
+            type: string
+          description: Filtrar por título (busca parcial)
+        - in: query
+          name: topic
+          schema:
+            $ref: '#/components/schemas/CourseTopic'
+          description: Filtrar por tema
+      responses:
+        "200":
+          description: Lista de cursos com turmas disponíveis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CourseWithClasses'
+                  total:
+                    type: integer
+              example:
+                data:
+                  - id: 1
+                    title: "Marketing Digital"
+                    description: "Curso completo"
+                    topic: "marketing"
+                    image_url: "https://example.com/img.jpg"
+                    created_at: "2026-05-25T10:00:00"
+                    updated_at: "2026-05-25T10:00:00"
+                    classes:
+                      - id: 3
+                        title: "Turma A"
+                        description: "Primeira turma"
+                        slots: 30
+                        status: "disponivel"
+                        start_date: "2026-07-01"
+                        end_date: "2026-09-30"
+                total: 1
+
+    post:
+      tags: [Cursos]
+      summary: Criar um curso
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseInput'
+            example:
+              title: "Marketing Digital"
+              description: "Aprenda marketing digital do zero"
+              topic: "marketing"
+              image_url: "https://example.com/img.jpg"
+      responses:
+        "201":
+          description: Curso criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+  /courses/{id}:
+    parameters:
+      - $ref: '#/components/parameters/CourseId'
+
+    put:
+      tags: [Cursos]
+      summary: Atualizar um curso
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseUpdateInput'
+      responses:
+        "200":
+          description: Curso atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Course'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags: [Cursos]
+      summary: Excluir um curso
+      description: Remove o curso e todas as turmas associadas.
+      responses:
+        "204":
+          description: Curso excluído com sucesso
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /courses/{courseId}/classes:
+    parameters:
+      - $ref: '#/components/parameters/CourseIdInPath'
+
+    post:
+      tags: [Turmas]
+      summary: Criar uma turma para um curso
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassInput'
+            example:
+              title: "Turma A - Julho 2026"
+              description: "Primeira turma do semestre"
+              slots: 30
+              status: "disponivel"
+              start_date: "2026-07-01"
+              end_date: "2026-09-30"
+      responses:
+        "201":
+          description: Turma criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Class'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+  /courses/{courseId}/classes/{classId}:
+    parameters:
+      - $ref: '#/components/parameters/CourseIdInPath'
+      - $ref: '#/components/parameters/ClassId'
+
+    put:
+      tags: [Turmas]
+      summary: Atualizar uma turma
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassUpdateInput'
+      responses:
+        "200":
+          description: Turma atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Class'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags: [Turmas]
+      summary: Excluir uma turma
+      responses:
+        "204":
+          description: Turma excluída com sucesso
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /users:
+    post:
+      tags: [Usuários]
+      summary: Criar um usuário
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInput'
+            example:
+              name: "João Silva"
+              email: "joao@example.com"
+      responses:
+        "201":
+          description: Usuário criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "409":
+          description: Email já cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+  /users/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+
+    delete:
+      tags: [Usuários]
+      summary: Excluir um usuário
+      description: Remove o usuário e todas as suas matrículas.
+      responses:
+        "204":
+          description: Usuário excluído com sucesso
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /users/{id}/enrollments:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+
+    get:
+      tags: [Matrículas]
+      summary: Listar cursos em que o usuário está matriculado
+      responses:
+        "200":
+          description: Matrículas do usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserEnrollments'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /enrollments:
+    post:
+      tags: [Matrículas]
+      summary: Matricular usuário em uma turma
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentInput'
+            example:
+              user_id: 1
+              course_class_id: 3
+      responses:
+        "201":
+          description: Matrícula realizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enrollment'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          description: Usuário já matriculado em turma do mesmo curso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          description: Regra de negócio violada (turma encerrada, fora do período, sem vagas)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  parameters:
+    CourseId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    CourseIdInPath:
+      name: courseId
+      in: path
+      required: true
+      schema:
+        type: integer
+    ClassId:
+      name: classId
+      in: path
+      required: true
+      schema:
+        type: integer
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+
+  responses:
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: NOT_FOUND
+              message: "Recurso não encontrado."
+    ValidationError:
+      description: Dados de entrada inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: "Dados inválidos."
+              details:
+                topic: "Tema inválido. Valores aceitos: inovacao, tecnologia, marketing, empreendedorismo, agro."
+
+  schemas:
+    CourseTopic:
+      type: string
+      enum: [inovacao, tecnologia, marketing, empreendedorismo, agro]
+
+    ClassStatus:
+      type: string
+      enum: [disponivel, encerrado]
+
+    CourseInput:
+      type: object
+      required: [title, topic]
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        topic:
+          $ref: '#/components/schemas/CourseTopic'
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+
+    CourseUpdateInput:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        topic:
+          $ref: '#/components/schemas/CourseTopic'
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+
+    Course:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        topic:
+          $ref: '#/components/schemas/CourseTopic'
+        image_url:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CourseWithClasses:
+      allOf:
+        - $ref: '#/components/schemas/Course'
+        - type: object
+          properties:
+            classes:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClassSummary'
+
+    ClassInput:
+      type: object
+      required: [title, slots, status, start_date, end_date]
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        slots:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/ClassStatus'
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+
+    ClassUpdateInput:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        slots:
+          type: integer
+          minimum: 1
+        status:
+          $ref: '#/components/schemas/ClassStatus'
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+
+    Class:
+      type: object
+      properties:
+        id:
+          type: integer
+        course_id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        slots:
+          type: integer
+        status:
+          $ref: '#/components/schemas/ClassStatus'
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ClassSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        slots:
+          type: integer
+        status:
+          $ref: '#/components/schemas/ClassStatus'
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+
+    UserInput:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    EnrollmentInput:
+      type: object
+      required: [user_id, course_class_id]
+      properties:
+        user_id:
+          type: integer
+        course_class_id:
+          type: integer
+
+    Enrollment:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        course_class_id:
+          type: integer
+        enrolled_at:
+          type: string
+          format: date-time
+
+    UserEnrollments:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        enrollments:
+          type: array
+          items:
+            type: object
+            properties:
+              enrollment_id:
+                type: integer
+              enrolled_at:
+                type: string
+                format: date-time
+              course:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  topic:
+                    $ref: '#/components/schemas/CourseTopic'
+                  image_url:
+                    type: string
+                    nullable: true
+              class:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  description:
+                    type: string
+                    nullable: true
+                  slots:
+                    type: integer
+                  status:
+                    $ref: '#/components/schemas/ClassStatus'
+                  start_date:
+                    type: string
+                    format: date
+                  end_date:
+                    type: string
+                    format: date
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties:
+                type: string
