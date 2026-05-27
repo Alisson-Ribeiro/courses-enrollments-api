@@ -24,7 +24,7 @@ class CourseValidator
             $errors['topic'] = 'Tema inválido. Valores aceitos: ' . implode(', ', self::VALID_TOPICS) . '.';
         }
 
-        if (!empty($data['image_url']) && !filter_var($data['image_url'], FILTER_VALIDATE_URL)) {
+        if (isset($data['image_url']) && $data['image_url'] !== null && !filter_var($data['image_url'], FILTER_VALIDATE_URL)) {
             $errors['image_url'] = 'A URL da imagem é inválida.';
         }
 
@@ -51,7 +51,7 @@ class CourseValidator
             }
         }
 
-        if (!empty($data['image_url']) && !filter_var($data['image_url'], FILTER_VALIDATE_URL)) {
+        if (isset($data['image_url']) && $data['image_url'] !== null && !filter_var($data['image_url'], FILTER_VALIDATE_URL)) {
             $errors['image_url'] = 'A URL da imagem é inválida.';
         }
 

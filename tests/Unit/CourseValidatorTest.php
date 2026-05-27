@@ -50,6 +50,16 @@ class CourseValidatorTest extends TestCase
         ]);
     }
 
+    public function testEmptyImageUrlThrowsException(): void
+    {
+        $this->expectException(ValidationException::class);
+        CourseValidator::validateCreate([
+            'title'     => 'Curso',
+            'topic'     => 'tecnologia',
+            'image_url' => '',
+        ]);
+    }
+
     public function testValidImageUrl(): void
     {
         $this->expectNotToPerformAssertions();
