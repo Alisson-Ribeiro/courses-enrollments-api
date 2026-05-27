@@ -187,4 +187,45 @@ class CourseTest extends IntegrationTestCase
         $this->assertCount(1, $results['data']);
         $this->assertSame('Marketing Digital', $results['data'][0]['title']);
     }
+
+    public function testListCoursesReturnsPaginationStructure(): void
+    {
+        $course = $this->createCourse();
+        $this->createClass($course['id']);
+
+        $result = $this->service->listWithAvailableClasses();
+
+        $this->assertArrayHasKey('data', $result);
+        $this->assertArrayHasKey('total', $result);
+        $this->assertIsArray($result['data']);
+        $this->assertIsInt($result['total']);
+    }
+
+    public function testListCoursesPaginationLimitsResults(): void
+    {
+        foreach (['A', 'B', 'C'] as $i => $letter) {
+            $topics = ['tecnologia', 'marketing', 'inovacao'];
+            $c = $this->createCourse(['title' => "Curso {$letter}", 'topic' => $topics[$i]]);
+            $this->createClass($c['id']);
+        }
+
+        $result = $this->service->listWithAvailableClasses([], 1, 2);
+
+        $this->assertCount(2, $result['data']);
+        $this->assertSame(3, $result['total']);
+    }
+
+    public function testListCoursesPage2ReturnsCorrectSlice(): void
+    {
+        foreach (['A', 'B', 'C'] as $i => $letter) {
+            $topics = ['tecnologia', 'marketing', 'inovacao'];
+            $c = $this->createCourse(['title' => "Curso {$letter}", 'topic' => $topics[$i]]);
+            $this->createClass($c['id']);
+        }
+
+        $result = $this->service->listWithAvailableClasses([], 2, 2);
+
+        $this->assertCount(1, $result['data']);
+        $this->assertSame(3, $result['total']);
+    }
 }

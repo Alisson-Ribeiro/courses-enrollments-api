@@ -171,4 +171,43 @@ class EnrollmentRepositoryTest extends IntegrationTestCase
         $this->assertCount(1, $result);
         $this->assertSame((int)$this->class['id'], (int)$result[0]['class_id']);
     }
+
+    public function testFindByIdReturnsEnrollment(): void
+    {
+        $enrollment = $this->createEnrollment((int)$this->user['id'], (int)$this->class['id']);
+
+        $result = $this->repository->findById((int)$enrollment['id']);
+
+        $this->assertIsArray($result);
+        $this->assertSame((int)$enrollment['id'], (int)$result['id']);
+        $this->assertSame((int)$this->user['id'], (int)$result['user_id']);
+        $this->assertSame((int)$this->class['id'], (int)$result['course_class_id']);
+    }
+
+    public function testFindByIdReturnsNullForNonExistent(): void
+    {
+        $result = $this->repository->findById(9999);
+
+        $this->assertNull($result);
+    }
+
+    public function testDeleteRemovesEnrollmentAndReturnsTrue(): void
+    {
+        $enrollment = $this->createEnrollment((int)$this->user['id'], (int)$this->class['id']);
+
+        $deleted = $this->repository->delete((int)$enrollment['id']);
+
+        $this->assertTrue($deleted);
+
+        $stmt = $this->pdo->prepare('SELECT * FROM enrollments WHERE id = :id');
+        $stmt->execute(['id' => $enrollment['id']]);
+        $this->assertFalse($stmt->fetch(), 'A matrícula deve ser removida do banco');
+    }
+
+    public function testDeleteReturnsFalseForNonExistent(): void
+    {
+        $result = $this->repository->delete(9999);
+
+        $this->assertFalse($result);
+    }
 }

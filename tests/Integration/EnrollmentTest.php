@@ -216,4 +216,24 @@ class EnrollmentTest extends IntegrationTestCase
             $this->assertSame('ENROLLMENT_NO_SLOTS', $e->getRule());
         }
     }
+
+    public function testCancelEnrollmentSuccess(): void
+    {
+        $user       = $this->createUser();
+        $course     = $this->createCourse();
+        $class      = $this->createClass($course['id']);
+        $enrollment = $this->createEnrollment($user['id'], $class['id']);
+
+        $this->service->cancel((int)$enrollment['id']);
+
+        $stmt = $this->pdo->prepare('SELECT * FROM enrollments WHERE id = :id');
+        $stmt->execute(['id' => $enrollment['id']]);
+        $this->assertFalse($stmt->fetch(), 'A matrícula deve ser removida do banco após cancelamento');
+    }
+
+    public function testCancelNonExistentEnrollmentThrowsNotFoundException(): void
+    {
+        $this->expectException(NotFoundException::class);
+        $this->service->cancel(9999);
+    }
 }
