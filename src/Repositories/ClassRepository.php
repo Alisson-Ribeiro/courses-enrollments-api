@@ -35,18 +35,29 @@ class ClassRepository
 
     public function update(int $id, array $data): ?array
     {
+        $current = $this->findById($id);
+        if ($current === null) {
+            return null;
+        }
+
         $fields = [];
         $params = ['id' => $id];
 
         foreach (['title', 'description', 'slots', 'status', 'start_date', 'end_date'] as $field) {
-            if (array_key_exists($field, $data)) {
-                $fields[] = "{$field} = :{$field}";
-                $params[$field] = $field === 'slots' ? (int)$data[$field] : $data[$field];
+            if (!array_key_exists($field, $data)) {
+                continue;
             }
+            $incoming = $field === 'slots' ? (int)$data[$field] : $data[$field];
+            $existing = $field === 'slots' ? (int)$current[$field] : $current[$field];
+            if ($incoming === $existing) {
+                continue;
+            }
+            $fields[] = "{$field} = :{$field}";
+            $params[$field] = $incoming;
         }
 
         if (empty($fields)) {
-            return $this->findById($id);
+            return $current;
         }
 
         $fields[] = 'updated_at = NOW()';

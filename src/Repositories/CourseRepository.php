@@ -32,18 +32,27 @@ class CourseRepository
 
     public function update(int $id, array $data): ?array
     {
+        $current = $this->findById($id);
+        if ($current === null) {
+            return null;
+        }
+
         $fields = [];
         $params = ['id' => $id];
 
         foreach (['title', 'description', 'topic', 'image_url'] as $field) {
-            if (array_key_exists($field, $data)) {
-                $fields[] = "{$field} = :{$field}";
-                $params[$field] = $data[$field];
+            if (!array_key_exists($field, $data)) {
+                continue;
             }
+            if ((string)($data[$field] ?? '') === (string)($current[$field] ?? '')) {
+                continue;
+            }
+            $fields[] = "{$field} = :{$field}";
+            $params[$field] = $data[$field];
         }
 
         if (empty($fields)) {
-            return $this->findById($id);
+            return $current;
         }
 
         $fields[] = 'updated_at = NOW()';
