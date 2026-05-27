@@ -249,6 +249,24 @@ paths:
         "404":
           $ref: '#/components/responses/NotFound'
 
+  /enrollments/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: ID da matrícula
+
+    delete:
+      tags: [Matrículas]
+      summary: Cancelar matrícula
+      responses:
+        "204":
+          description: Matrícula cancelada com sucesso
+        "404":
+          $ref: '#/components/responses/NotFound'
+
   /enrollments:
     post:
       tags: [Matrículas]

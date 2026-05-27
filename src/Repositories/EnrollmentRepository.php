@@ -13,6 +13,20 @@ class EnrollmentRepository
         $this->pdo = Database::getConnection();
     }
 
+    public function findById(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM enrollments WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch() ?: null;
+    }
+
+    public function delete(int $id): bool
+    {
+        $stmt = $this->pdo->prepare('DELETE FROM enrollments WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        return $stmt->rowCount() > 0;
+    }
+
     public function create(int $userId, int $classId): array
     {
         $stmt = $this->pdo->prepare(

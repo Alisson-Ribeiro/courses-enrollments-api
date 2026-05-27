@@ -34,6 +34,12 @@ class EnrollmentController extends BaseController
         Response::created($enrollment);
     }
 
+    public function destroy(array $params): void
+    {
+        $this->service->cancel((int)$params['id']);
+        Response::noContent();
+    }
+
     public function userEnrollments(array $params): void
     {
         $result = $this->service->listUserEnrollments((int)$params['id']);

@@ -45,6 +45,7 @@ $router->delete('/api/users/{id}', [UserController::class, 'destroy']);
 $router->get('/api/users/{id}/enrollments', [EnrollmentController::class, 'userEnrollments']);
 
 $router->post('/api/enrollments', [EnrollmentController::class, 'store']);
+$router->delete('/api/enrollments/{id}', [EnrollmentController::class, 'destroy']);
 
 try {
     $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);
