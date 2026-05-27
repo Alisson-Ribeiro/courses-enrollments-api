@@ -88,6 +88,7 @@ npx @redocly/cli preview-docs docs/openapi.yaml
 
 | Método   | Path                                        | Descrição                                |
 |----------|---------------------------------------------|------------------------------------------|
+| `GET`    | `/api/health`                               | Health check                             |
 | `GET`    | `/api/courses`                              | Listar cursos com turmas disponíveis     |
 | `POST`   | `/api/courses`                              | Criar curso                              |
 | `PUT`    | `/api/courses/{id}`                         | Atualizar curso                          |

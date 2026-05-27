@@ -9,6 +9,8 @@ servers:
     description: Ambiente local (Docker)
 
 tags:
+  - name: Infraestrutura
+    description: Endpoints de operação e monitoramento
   - name: Cursos
     description: Gerenciamento de cursos
   - name: Turmas
@@ -19,6 +21,25 @@ tags:
     description: Matrícula e cancelamento de alunos em turmas
 
 paths:
+  /health:
+    get:
+      tags: [Infraestrutura]
+      summary: Health check
+      description: Verifica se a API está no ar.
+      responses:
+        "200":
+          description: API operacional
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+              example:
+                status: ok
+
   /courses:
     get:
       tags: [Cursos]
