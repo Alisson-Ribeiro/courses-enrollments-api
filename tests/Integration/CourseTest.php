@@ -120,9 +120,9 @@ class CourseTest extends IntegrationTestCase
 
         $results = $this->service->listWithAvailableClasses();
 
-        $this->assertCount(1, $results);
-        $this->assertSame('Curso Visível', $results[0]['title']);
-        $this->assertNotEmpty($results[0]['classes']);
+        $this->assertCount(1, $results['data']);
+        $this->assertSame('Curso Visível', $results['data'][0]['title']);
+        $this->assertNotEmpty($results['data'][0]['classes']);
     }
 
     public function testListCoursesDoesNotReturnClosedClasses(): void
@@ -131,7 +131,7 @@ class CourseTest extends IntegrationTestCase
         $this->createClass($course['id'], ['status' => 'encerrado']);
 
         $results = $this->service->listWithAvailableClasses();
-        $this->assertCount(0, $results);
+        $this->assertCount(0, $results['data']);
     }
 
     public function testListCoursesDoesNotReturnClassesOutsideDateRange(): void
@@ -143,7 +143,7 @@ class CourseTest extends IntegrationTestCase
         ]);
 
         $results = $this->service->listWithAvailableClasses();
-        $this->assertCount(0, $results, 'Turmas com início futuro não devem aparecer na listagem');
+        $this->assertCount(0, $results['data'], 'Turmas com início futuro não devem aparecer na listagem');
     }
 
     public function testListCoursesFilterByTitle(): void
@@ -155,8 +155,8 @@ class CourseTest extends IntegrationTestCase
 
         $results = $this->service->listWithAvailableClasses(['title' => 'Marketing']);
 
-        $this->assertCount(1, $results);
-        $this->assertSame('Marketing Digital', $results[0]['title']);
+        $this->assertCount(1, $results['data']);
+        $this->assertSame('Marketing Digital', $results['data'][0]['title']);
     }
 
     public function testListCoursesFilterByTopic(): void
@@ -168,8 +168,8 @@ class CourseTest extends IntegrationTestCase
 
         $results = $this->service->listWithAvailableClasses(['topic' => 'agro']);
 
-        $this->assertCount(1, $results);
-        $this->assertSame('agro', $results[0]['topic']);
+        $this->assertCount(1, $results['data']);
+        $this->assertSame('agro', $results['data'][0]['topic']);
     }
 
     public function testListCoursesFilterByTitleAndTopic(): void
@@ -184,7 +184,7 @@ class CourseTest extends IntegrationTestCase
             'topic' => 'marketing',
         ]);
 
-        $this->assertCount(1, $results);
-        $this->assertSame('Marketing Digital', $results[0]['title']);
+        $this->assertCount(1, $results['data']);
+        $this->assertSame('Marketing Digital', $results['data'][0]['title']);
     }
 }

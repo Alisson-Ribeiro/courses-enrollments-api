@@ -5,50 +5,80 @@ API REST em PHP para gerenciamento de cursos, turmas e matrículas de alunos.
 ## Pré-requisitos
 
 - [Docker](https://www.docker.com/) e Docker Compose v2+
+- [Node.js](https://nodejs.org/) _(opcional — apenas para preview interativo da documentação OpenAPI)_
 
 ## Subindo o ambiente
 
 ```bash
 docker compose up -d
+docker compose exec app composer install
 ```
 
 A API estará disponível em: **http://localhost:8080**
 
-Aguarde o banco de dados inicializar (~10 segundos) antes de fazer requisições.
-
-### Health check
+O Docker Compose aguarda o banco de dados estar pronto automaticamente antes de iniciar a aplicação. Confirme que tudo está no ar com o health check:
 
 ```bash
+# Linux / macOS
 curl http://localhost:8080/api/health
+
+# Windows (PowerShell)
+Invoke-WebRequest http://localhost:8080/api/health
 ```
 
 ### Carregar dados de exemplo (opcional)
 
 ```bash
+# Linux / macOS
 docker compose exec db psql -U api_user -d courses_api -f /dev/stdin < database/seeds/seed.sql
+
+# Windows (PowerShell)
+docker compose cp database/seeds/seed.sql db:/tmp/seed.sql
+docker compose exec db psql -U api_user -d courses_api -f /tmp/seed.sql
 ```
+
+## Acesso ao banco (ferramentas externas)
+
+As portas do banco são expostas localmente para uso com pgAdmin, DBeaver ou psql:
+
+| Ambiente | Host      | Porta | Banco              | Usuário    | Senha    |
+|----------|-----------|-------|--------------------|------------|----------|
+| App      | localhost | 5432  | courses_api        | api_user   | api_pass |
+| Testes   | localhost | 5433  | courses_api_test   | api_user   | api_pass |
 
 ## Rodando os testes
 
-Os testes usam um banco de dados separado (`db_test` na porta 5433).
+Os testes usam um banco de dados separado (`db_test` na porta 5433), que sobe automaticamente com `docker compose up -d`.
+
+- **Testes unitários** não requerem banco de dados
+- **Testes de integração** requerem o container `db_test` rodando
 
 ```bash
-docker compose exec app composer install
+# Todos os testes
 docker compose exec app ./vendor/bin/phpunit
+
+# Apenas testes unitários (sem banco)
+docker compose exec app ./vendor/bin/phpunit --testsuite Unit
+
+# Apenas testes de integração (requer db_test)
+docker compose exec app ./vendor/bin/phpunit --testsuite Integration
 ```
 
-Para rodar apenas uma suite:
+## Limpando o ambiente
 
 ```bash
-docker compose exec app ./vendor/bin/phpunit --testsuite Unit
-docker compose exec app ./vendor/bin/phpunit --testsuite Integration
+# Para os containers, mas preserva os dados do banco
+docker compose down
+
+# Remove os containers e apaga os dados do banco (reset completo)
+docker compose down -v
 ```
 
 ## Documentação da API
 
 O arquivo `docs/openapi.yaml` contém a especificação completa em OpenAPI 3.0.
 
-Para visualizar interativamente:
+Para visualizar interativamente _(requer [Node.js](https://nodejs.org/) instalado)_:
 
 ```bash
 npx @redocly/cli preview-docs docs/openapi.yaml
@@ -69,6 +99,7 @@ npx @redocly/cli preview-docs docs/openapi.yaml
 | `DELETE` | `/api/users/{id}`                           | Excluir usuário                          |
 | `GET`    | `/api/users/{id}/enrollments`               | Listar matrículas do usuário             |
 | `POST`   | `/api/enrollments`                          | Matricular usuário em turma              |
+| `DELETE` | `/api/enrollments/{id}`                     | Cancelar matrícula                       |
 
 ### Filtros disponíveis em `GET /api/courses`
 
