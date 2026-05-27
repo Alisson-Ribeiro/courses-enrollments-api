@@ -10,9 +10,13 @@ servers:
 
 tags:
   - name: Cursos
+    description: Gerenciamento de cursos
   - name: Turmas
+    description: Gerenciamento de turmas vinculadas a um curso
   - name: Usuários
+    description: Gerenciamento de usuários
   - name: Matrículas
+    description: Matrícula e cancelamento de alunos em turmas
 
 paths:
   /courses:
@@ -24,15 +28,31 @@ paths:
           name: title
           schema:
             type: string
-          description: Filtrar por título (busca parcial)
+            maxLength: 255
+          description: Filtrar por título (busca parcial, máximo 255 caracteres)
         - in: query
           name: topic
           schema:
             $ref: '#/components/schemas/CourseTopic'
           description: Filtrar por tema
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: Número da página
+        - in: query
+          name: per_page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 15
+          description: Itens por página (máximo 100)
       responses:
         "200":
-          description: Lista de cursos com turmas disponíveis
+          description: Lista de cursos com turmas disponíveis (paginada)
           content:
             application/json:
               schema:
@@ -42,8 +62,8 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/CourseWithClasses'
-                  total:
-                    type: integer
+                  meta:
+                    $ref: '#/components/schemas/PaginationMeta'
               example:
                 data:
                   - id: 1
@@ -61,7 +81,13 @@ paths:
                         status: "disponivel"
                         start_date: "2026-07-01"
                         end_date: "2026-09-30"
-                total: 1
+                meta:
+                  total: 42
+                  page: 1
+                  per_page: 15
+                  last_page: 3
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
 
     post:
       tags: [Cursos]
@@ -251,12 +277,7 @@ paths:
 
   /enrollments/{id}:
     parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: integer
-        description: ID da matrícula
+      - $ref: '#/components/parameters/EnrollmentId'
 
     delete:
       tags: [Matrículas]
@@ -266,6 +287,8 @@ paths:
           description: Matrícula cancelada com sucesso
         "404":
           $ref: '#/components/responses/NotFound'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
 
   /enrollments:
     post:
@@ -328,6 +351,13 @@ components:
       required: true
       schema:
         type: integer
+    EnrollmentId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: ID da matrícula
 
   responses:
     NotFound:
@@ -340,6 +370,21 @@ components:
             error:
               code: NOT_FOUND
               message: "Recurso não encontrado."
+    TooManyRequests:
+      description: Limite de requisições excedido
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Segundos até poder tentar novamente
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: TOO_MANY_REQUESTS
+              message: "Muitas requisições. Tente novamente em 60 segundos."
     ValidationError:
       description: Dados de entrada inválidos
       content:
@@ -354,6 +399,22 @@ components:
                 topic: "Tema inválido. Valores aceitos: inovacao, tecnologia, marketing, empreendedorismo, agro."
 
   schemas:
+    PaginationMeta:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total de registros sem paginação
+        page:
+          type: integer
+          description: Página atual
+        per_page:
+          type: integer
+          description: Itens por página
+        last_page:
+          type: integer
+          description: Última página disponível
+
     CourseTopic:
       type: string
       enum: [inovacao, tecnologia, marketing, empreendedorismo, agro]
