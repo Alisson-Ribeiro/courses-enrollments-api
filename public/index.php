@@ -11,6 +11,7 @@ use App\Controllers\UserController;
 use App\Exceptions\BusinessRuleException;
 use App\Exceptions\NotFoundException;
 use App\Exceptions\ValidationException;
+use App\Helpers\IdempotencyHandler;
 use App\Helpers\RateLimiter;
 use App\Helpers\Response;
 use App\Router;
@@ -26,6 +27,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 RateLimiter::check();
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $rawKey = $_SERVER['HTTP_IDEMPOTENCY_KEY'] ?? '';
+    if ($rawKey !== '' && IdempotencyHandler::isValidKey($rawKey)) {
+        $cached = IdempotencyHandler::get($rawKey);
+        if ($cached !== null) {
+            http_response_code($cached['status']);
+            echo $cached['body'];
+            exit;
+        }
+        // Captura a resposta para cachear após o dispatch
+        // Nota: dois requests simultâneos com a mesma chave podem ambos passar por aqui
+        // antes de qualquer um armazenar — limitação conhecida (race condition < 1ms)
+        ob_start();
+        register_shutdown_function(function () use ($rawKey) {
+            $body   = ob_get_contents();
+            ob_end_flush();
+            $status = http_response_code();
+            if ($status < 500) {
+                IdempotencyHandler::store($rawKey, $status, $body);
+            }
+        });
+    }
+}
 
 $router = new Router();
 

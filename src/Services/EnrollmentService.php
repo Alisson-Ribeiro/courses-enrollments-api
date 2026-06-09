@@ -95,10 +95,6 @@ class EnrollmentService
 
     public function cancel(int $id): void
     {
-        $enrollment = $this->enrollmentRepository->findById($id);
-        if ($enrollment === null) {
-            throw new NotFoundException("Matrícula {$id} não encontrada.");
-        }
         $this->enrollmentRepository->delete($id);
     }
 

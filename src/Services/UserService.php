@@ -32,10 +32,6 @@ class UserService
 
     public function delete(int $id): void
     {
-        if ($this->repository->findById($id) === null) {
-            throw new NotFoundException("Usuário {$id} não encontrado.");
-        }
-
         $this->repository->delete($id);
     }
 

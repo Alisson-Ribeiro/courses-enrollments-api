@@ -30,7 +30,6 @@ class CourseService
 
     public function delete(int $id): void
     {
-        $this->findOrFail($id);
         $this->repository->delete($id);
     }
 
