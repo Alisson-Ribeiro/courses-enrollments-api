@@ -25,20 +25,34 @@ paths:
     get:
       tags: [Infraestrutura]
       summary: Health check
-      description: Verifica se a API está no ar.
+      description: Verifica se a API e suas dependências estão operacionais. Isento de rate limiting.
       responses:
         "200":
-          description: API operacional
+          description: Todos os serviços operacionais
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: ok
+                $ref: '#/components/schemas/HealthResponse'
               example:
                 status: ok
+                checks:
+                  database: {status: ok}
+                  opcache: {status: ok, hit_rate: 99.8}
+                  apcu: {status: ok}
+                  redis: {status: ok}
+        "503":
+          description: Um ou mais serviços degradados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: degraded
+                checks:
+                  database: {status: ok}
+                  opcache: {status: error, message: desabilitado}
+                  apcu: {status: ok}
+                  redis: {status: error, message: "Connection refused"}
 
   /courses:
     get:
@@ -113,6 +127,8 @@ paths:
     post:
       tags: [Cursos]
       summary: Criar um curso
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -133,6 +149,8 @@ paths:
                 $ref: '#/components/schemas/Course'
         "422":
           $ref: '#/components/responses/ValidationError'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
 
   /courses/{id}:
     parameters:
@@ -158,6 +176,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         "422":
           $ref: '#/components/responses/ValidationError'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
 
     delete:
       tags: [Cursos]
@@ -168,6 +188,8 @@ paths:
           description: Curso excluído com sucesso
         "404":
           $ref: '#/components/responses/NotFound'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
 
   /courses/{courseId}/classes:
     parameters:
@@ -176,6 +198,8 @@ paths:
     post:
       tags: [Turmas]
       summary: Criar uma turma para um curso
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -200,6 +224,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         "422":
           $ref: '#/components/responses/ValidationError'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
 
   /courses/{courseId}/classes/{classId}:
     parameters:
@@ -226,6 +252,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         "422":
           $ref: '#/components/responses/ValidationError'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
 
     delete:
       tags: [Turmas]
@@ -235,11 +263,15 @@ paths:
           description: Turma excluída com sucesso
         "404":
           $ref: '#/components/responses/NotFound'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
 
   /users:
     post:
       tags: [Usuários]
       summary: Criar um usuário
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -264,6 +296,8 @@ paths:
                 $ref: '#/components/schemas/Error'
         "422":
           $ref: '#/components/responses/ValidationError'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
 
   /users/{id}:
     parameters:
@@ -278,6 +312,8 @@ paths:
           description: Usuário excluído com sucesso
         "404":
           $ref: '#/components/responses/NotFound'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
 
   /users/{id}/enrollments:
     parameters:
@@ -295,6 +331,8 @@ paths:
                 $ref: '#/components/schemas/UserEnrollments'
         "404":
           $ref: '#/components/responses/NotFound'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
 
   /enrollments/{id}:
     parameters:
@@ -315,6 +353,8 @@ paths:
     post:
       tags: [Matrículas]
       summary: Matricular usuário em uma turma
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
@@ -345,9 +385,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        "429":
+          $ref: '#/components/responses/TooManyRequests'
 
 components:
   parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        maxLength: 128
+      description: >
+        Chave de idempotência para evitar duplicação em retentativas. Se fornecida,
+        a resposta da primeira requisição bem-sucedida é armazenada por 24 horas e
+        retornada automaticamente para requisições subsequentes com a mesma chave.
     CourseId:
       name: id
       in: path
@@ -420,6 +473,37 @@ components:
                 topic: "Tema inválido. Valores aceitos: inovacao, tecnologia, marketing, empreendedorismo, agro."
 
   schemas:
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+        message:
+          type: string
+          description: Presente apenas quando status é error
+        hit_rate:
+          type: number
+          description: Presente apenas no check do opcache
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        checks:
+          type: object
+          properties:
+            database:
+              $ref: '#/components/schemas/HealthCheck'
+            opcache:
+              $ref: '#/components/schemas/HealthCheck'
+            apcu:
+              $ref: '#/components/schemas/HealthCheck'
+            redis:
+              $ref: '#/components/schemas/HealthCheck'
+
     PaginationMeta:
       type: object
       properties:

@@ -26,6 +26,8 @@ curl http://localhost:8080/api/health
 Invoke-WebRequest http://localhost:8080/api/health
 ```
 
+O health check retorna `200 ok` quando todos os serviços estão operacionais, ou `503 degraded` com detalhes por componente (database, opcache, apcu, redis).
+
 ### Carregar dados de exemplo (opcional)
 
 ```bash
@@ -88,7 +90,7 @@ npx @redocly/cli preview-docs docs/openapi.yaml
 
 | Método   | Path                                        | Descrição                                |
 |----------|---------------------------------------------|------------------------------------------|
-| `GET`    | `/api/health`                               | Health check                             |
+| `GET`    | `/api/health`                               | Health check (DB, OPcache, APCu, Redis)  |
 | `GET`    | `/api/courses`                              | Listar cursos com turmas disponíveis     |
 | `POST`   | `/api/courses`                              | Criar curso                              |
 | `PUT`    | `/api/courses/{id}`                         | Atualizar curso                          |
@@ -154,6 +156,29 @@ curl -s -X POST http://localhost:8080/api/enrollments \
 
 ```bash
 curl -s http://localhost:8080/api/users/1/enrollments
+```
+
+## Rate limiting
+
+A API aplica um limite de **60 requisições por minuto por IP**. Ao ultrapassar o limite a resposta é `429 Too Many Requests` com o header `Retry-After: 60`.
+
+O endpoint `/api/health` é isento de rate limiting.
+
+Quando Redis está disponível o contador é compartilhado entre réplicas; caso contrário há fallback para APCu (por instância).
+
+## Idempotência
+
+Todos os endpoints `POST` aceitam o header opcional `Idempotency-Key` (máximo 128 caracteres). Quando presente:
+
+- A resposta da primeira requisição bem-sucedida é armazenada por **24 horas**.
+- Retentativas com a mesma chave recebem a resposta em cache sem reprocessamento.
+- Um lock atômico via Redis SET NX evita race conditions entre réplicas paralelas.
+
+```bash
+curl -s -X POST http://localhost:8080/api/enrollments \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: meu-uuid-unico-aqui" \
+  -d '{"user_id":1,"course_class_id":1}'
 ```
 
 ## Regras de negócio
