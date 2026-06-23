@@ -37,9 +37,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo $cached['body'];
             exit;
         }
-        // Captura a resposta para cachear após o dispatch
-        // Nota: dois requests simultâneos com a mesma chave podem ambos passar por aqui
-        // antes de qualquer um armazenar — limitação conhecida (race condition < 1ms)
+        // Reserva atomicamente a chave via Redis SET NX — elimina race condition entre réplicas.
+        // Se outra instância já pegou o lock, aguarda 150ms e tenta ler o resultado cacheado.
+        $reserved = IdempotencyHandler::reserve($rawKey);
+        if (!$reserved) {
+            usleep(150_000);
+            $cached = IdempotencyHandler::get($rawKey);
+            if ($cached !== null) {
+                http_response_code($cached['status']);
+                echo $cached['body'];
+                exit;
+            }
+            // Redis indisponível ou tempo de processamento excedeu o lock — segue normalmente.
+        }
         ob_start();
         register_shutdown_function(function () use ($rawKey) {
             $body   = ob_get_contents();

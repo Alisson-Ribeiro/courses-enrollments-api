@@ -6,15 +6,33 @@ class IdempotencyHandler
 {
     private const TTL     = 86400; // 24 horas
     private const MAX_KEY = 128;
+    private const LOCK_TTL = 30;   // segundos máximos de processamento
 
     public static function isValidKey(string $key): bool
     {
         return $key !== '' && strlen($key) <= self::MAX_KEY;
     }
 
+    private static function getRedis(): ?\Redis
+    {
+        $host = getenv('REDIS_HOST') ?: null;
+        if ($host === null || !extension_loaded('redis')) {
+            return null;
+        }
+        $r = new \Redis();
+        $r->connect($host, (int)(getenv('REDIS_PORT') ?: 6379));
+        return $r;
+    }
+
     public static function get(string $key): ?array
     {
         $cacheKey = self::cacheKey($key);
+
+        $redis = self::getRedis();
+        if ($redis !== null) {
+            $data = $redis->get($cacheKey);
+            return $data !== false ? json_decode($data, true) : null;
+        }
 
         if (extension_loaded('apcu') && apcu_enabled()) {
             $data = apcu_fetch($cacheKey, $exists);
@@ -24,10 +42,31 @@ class IdempotencyHandler
         return self::getFromFile($cacheKey);
     }
 
+    /**
+     * Reserva atomicamente a chave de idempotência via SET NX.
+     * Retorna true se esta requisição ganhou o lock (pode processar).
+     * Retorna false se outra requisição já está processando ou já processou.
+     */
+    public static function reserve(string $key): bool
+    {
+        $redis = self::getRedis();
+        if ($redis === null) {
+            return false;
+        }
+        $lockKey = 'lock_' . self::cacheKey($key);
+        return (bool) $redis->set($lockKey, '1', ['NX', 'EX' => self::LOCK_TTL]);
+    }
+
     public static function store(string $key, int $status, string $body): void
     {
         $cacheKey = self::cacheKey($key);
         $data     = ['status' => $status, 'body' => $body];
+
+        $redis = self::getRedis();
+        if ($redis !== null) {
+            $redis->setEx($cacheKey, self::TTL, json_encode($data));
+            return;
+        }
 
         if (extension_loaded('apcu') && apcu_enabled()) {
             apcu_store($cacheKey, $data, self::TTL);
@@ -77,7 +116,7 @@ class IdempotencyHandler
         $path   = self::filePath($cacheKey);
         $handle = @fopen($path, 'c+');
         if ($handle === false) {
-            return; // filesystem indisponível — fail open
+            return;
         }
 
         flock($handle, LOCK_EX);

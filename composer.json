@@ -19,6 +19,7 @@
         }
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "phpunit",
+        "optimize": "composer dump-autoload --optimize --classmap-authoritative"
     }
 }

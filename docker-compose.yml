@@ -8,14 +8,20 @@ services:
     volumes:
       - ./:/var/www/html
     environment:
-      DB_HOST: db
+      DB_HOST: pgbouncer
       DB_PORT: 5432
       DB_NAME: courses_api
       DB_USER: api_user
       DB_PASS: api_pass
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     depends_on:
       db:
         condition: service_healthy
+      pgbouncer:
+        condition: service_started
+      redis:
+        condition: service_started
     networks:
       - courses-network
 
@@ -28,6 +34,27 @@ services:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - app
+    networks:
+      - courses-network
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - courses-network
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    environment:
+      DB_HOST: db
+      DB_USER: api_user
+      DB_PASSWORD: api_pass
+      DB_NAME: courses_api
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 200
+      DEFAULT_POOL_SIZE: 20
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - courses-network
 

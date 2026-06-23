@@ -63,6 +63,9 @@ class EnrollmentService
         $pdo->beginTransaction();
 
         try {
+            // Bloqueia a linha da turma para serializar matrículas concorrentes (evita overbooking)
+            $this->classRepository->lockById($classId);
+
             $occupied = $this->enrollmentRepository->countByClass($classId);
             if ($occupied >= (int)$class['slots']) {
                 $pdo->rollBack();

@@ -53,12 +53,14 @@ class EnrollmentRepository
 
     public function findByUserAndCourse(int $userId, int $courseId): ?array
     {
+        // FOR UPDATE OF e: bloqueia apenas linhas de enrollments, não de course_classes
         $stmt = $this->pdo->prepare(
             'SELECT e.*
              FROM enrollments e
              INNER JOIN course_classes cc ON cc.id = e.course_class_id
              WHERE e.user_id = :user_id
-               AND cc.course_id = :course_id'
+               AND cc.course_id = :course_id
+             FOR UPDATE OF e'
         );
         $stmt->execute(['user_id' => $userId, 'course_id' => $courseId]);
         return $stmt->fetch() ?: null;

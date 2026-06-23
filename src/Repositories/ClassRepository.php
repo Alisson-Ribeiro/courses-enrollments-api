@@ -90,4 +90,13 @@ class ClassRepository
         $stmt->execute(['id' => $classId, 'course_id' => $courseId]);
         return $stmt->fetch() ?: null;
     }
+
+    // Deve ser chamado dentro de uma transação ativa. Bloqueia a linha da turma para
+    // serializar matrículas concorrentes, evitando overbooking mesmo com tabela vazia.
+    public function lockById(int $id): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM course_classes WHERE id = :id FOR UPDATE');
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch() ?: null;
+    }
 }
