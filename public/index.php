@@ -27,7 +27,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
-RateLimiter::check();
+$requestPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+if ($requestPath !== '/api/health') {
+    RateLimiter::check();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $rawKey = $_SERVER['HTTP_IDEMPOTENCY_KEY'] ?? '';
