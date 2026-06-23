@@ -12,8 +12,8 @@ class Database
             $host = getenv('DB_HOST') ?: 'localhost';
             $port = getenv('DB_PORT') ?: '5432';
             $name = getenv('DB_NAME') ?: 'courses_api';
-            $user = getenv('DB_USER') ?: 'api_user';
-            $pass = getenv('DB_PASS') ?: 'api_pass';
+            $user = getenv('DB_USER') or throw new \RuntimeException('Variável de ambiente DB_USER não definida.');
+            $pass = getenv('DB_PASS') or throw new \RuntimeException('Variável de ambiente DB_PASS não definida.');
 
             $dsn = "pgsql:host={$host};port={$port};dbname={$name}";
             self::$instance = new \PDO($dsn, $user, $pass, [

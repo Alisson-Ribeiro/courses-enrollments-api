@@ -7,6 +7,10 @@ services:
       dockerfile: docker/php/Dockerfile
     volumes:
       - ./:/var/www/html
+    # DESENVOLVIMENTO: variáveis hardcoded para facilitar o onboarding local.
+    # PRODUÇÃO: substitua por variáveis de ambiente injetadas pelo orquestrador
+    # (ex.: AWS Secrets Manager, Docker Swarm secrets, Kubernetes secretKeyRef)
+    # e nunca versione credenciais reais.
     environment:
       DB_HOST: pgbouncer
       DB_PORT: 5432
@@ -57,6 +61,8 @@ services:
 
   pgbouncer:
     image: edoburu/pgbouncer:latest
+    # PRODUÇÃO: MAX_CLIENT_CONN e DEFAULT_POOL_SIZE devem ser ajustados de acordo
+    # com os recursos disponíveis no servidor (regra geral: pool_size ≈ núcleos do banco × 2).
     environment:
       DB_HOST: db
       DB_USER: api_user
