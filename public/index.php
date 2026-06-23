@@ -54,6 +54,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             // Redis indisponível ou tempo de processamento excedeu o lock — segue normalmente.
         }
+        // ob_start + register_shutdown_function: única forma de capturar o corpo da resposta
+        // depois que os headers já foram enviados pelo PHP. O shutdown é executado após o
+        // script terminar e os dados são persistidos no cache somente para respostas não-5xx.
         ob_start();
         register_shutdown_function(function () use ($rawKey) {
             $body   = ob_get_contents();

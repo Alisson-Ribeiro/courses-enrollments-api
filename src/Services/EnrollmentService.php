@@ -59,6 +59,10 @@ class EnrollmentService
             );
         }
 
+        // Validações de regra de negócio (status, datas) ocorrem antes da transação:
+        // são leituras baratas e rejeitam cedo casos inválidos sem custo de lock.
+        // Validações sensíveis à concorrência (vagas e duplicata de curso) ficam dentro
+        // da transação com lock para garantir consistência sob requisições paralelas.
         $pdo = Database::getConnection();
         $pdo->beginTransaction();
 

@@ -40,6 +40,8 @@ class CourseRepository
         $fields = [];
         $params = ['id' => $id];
 
+        // Só inclui no UPDATE campos que realmente mudaram — evita sobrescrever updated_at
+        // quando o payload não traz alteração efetiva.
         foreach (['title', 'description', 'topic', 'image_url'] as $field) {
             if (!array_key_exists($field, $data)) {
                 continue;
@@ -94,6 +96,9 @@ class CourseRepository
 
         $whereClause = 'WHERE ' . implode(' AND ', $where);
 
+        // Duas queries separadas: a primeira conta o total sem LIMIT/OFFSET (necessário para
+        // calcular last_page), a segunda traz só a página solicitada. COUNT(DISTINCT c.id)
+        // porque o JOIN com course_classes pode produzir múltiplas linhas por curso.
         $countStmt = $this->pdo->prepare("
             SELECT COUNT(DISTINCT c.id)
             FROM courses c
@@ -107,6 +112,8 @@ class CourseRepository
         $params['limit']  = $perPage;
         $params['offset'] = $offset;
 
+        // json_agg agrega todas as turmas disponíveis de cada curso em um único campo JSON,
+        // evitando N+1 queries e mantendo o resultado em uma única passagem pelo banco.
         $sql = "
             SELECT
                 c.id,

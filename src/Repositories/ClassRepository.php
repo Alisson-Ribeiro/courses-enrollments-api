@@ -43,6 +43,8 @@ class ClassRepository
         $fields = [];
         $params = ['id' => $id];
 
+        // Só inclui no UPDATE campos que realmente mudaram — evita sobrescrever updated_at
+        // quando o payload não traz alteração efetiva.
         foreach (['title', 'description', 'slots', 'status', 'start_date', 'end_date'] as $field) {
             if (!array_key_exists($field, $data)) {
                 continue;
