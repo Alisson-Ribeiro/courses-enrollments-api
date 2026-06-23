@@ -228,4 +228,37 @@ class CourseTest extends IntegrationTestCase
         $this->assertCount(1, $result['data']);
         $this->assertSame(3, $result['total']);
     }
+
+    public function testListCoursesReturnsEmptyWhenNoCourses(): void
+    {
+        $result = $this->service->listWithAvailableClasses();
+
+        $this->assertSame([], $result['data']);
+        $this->assertSame(0, $result['total']);
+    }
+
+    public function testListCoursesWithPageBeyondTotalReturnsEmptyData(): void
+    {
+        $course = $this->createCourse();
+        $this->createClass($course['id']);
+
+        $result = $this->service->listWithAvailableClasses([], 999, 10);
+
+        $this->assertSame([], $result['data']);
+        $this->assertSame(1, $result['total']);
+    }
+
+    public function testDeleteCourseCascadesToEnrollments(): void
+    {
+        $user   = $this->createUser();
+        $course = $this->createCourse();
+        $class  = $this->createClass($course['id']);
+        $this->createEnrollment($user['id'], $class['id']);
+
+        $this->service->delete($course['id']);
+
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM enrollments WHERE course_class_id = :id');
+        $stmt->execute(['id' => $class['id']]);
+        $this->assertSame(0, (int)$stmt->fetchColumn(), 'Matrículas devem ser removidas via CASCADE ao deletar o curso');
+    }
 }

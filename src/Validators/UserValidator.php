@@ -10,7 +10,7 @@ class UserValidator
     {
         $errors = [];
 
-        if (empty($data['name']) || !is_string($data['name'])) {
+        if (empty($data['name']) || !is_string($data['name']) || trim($data['name']) === '') {
             $errors['name'] = 'O nome é obrigatório.';
         } elseif (strlen($data['name']) > 255) {
             $errors['name'] = 'O nome deve ter no máximo 255 caracteres.';

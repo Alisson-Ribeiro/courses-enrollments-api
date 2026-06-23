@@ -236,4 +236,18 @@ class EnrollmentTest extends IntegrationTestCase
         $this->expectException(NotFoundException::class);
         $this->service->cancel(9999);
     }
+
+    public function testCancelEnrollmentFreesSlotForReEnrollment(): void
+    {
+        $user   = $this->createUser();
+        $course = $this->createCourse();
+        $class  = $this->createClass($course['id'], ['slots' => 1]);
+
+        $enrollment = $this->service->enroll($user['id'], $class['id']);
+        $this->service->cancel((int)$enrollment['id']);
+
+        // Após cancelamento, a vaga deve estar disponível novamente
+        $reEnrollment = $this->service->enroll($user['id'], $class['id']);
+        $this->assertNotNull($reEnrollment['id']);
+    }
 }

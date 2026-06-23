@@ -53,6 +53,12 @@ class UserValidatorTest extends TestCase
         ]);
     }
 
+    public function testWhitespaceOnlyNameThrowsException(): void
+    {
+        $this->expectException(ValidationException::class);
+        UserValidator::validateCreate(['name' => '   ', 'email' => 'joao@example.com']);
+    }
+
     public function testValidEmailFormats(): void
     {
         $this->expectNotToPerformAssertions();

@@ -37,8 +37,7 @@ class ClassService
 
     public function delete(int $courseId, int $classId): void
     {
-        $class = $this->classRepository->findByCourseAndId($courseId, $classId);
-        if ($class === null) return;
+        $this->findOrFail($courseId, $classId);
         $this->classRepository->delete($classId);
     }
 

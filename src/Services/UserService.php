@@ -32,6 +32,7 @@ class UserService
 
     public function delete(int $id): void
     {
+        $this->findOrFail($id);
         $this->repository->delete($id);
     }
 

@@ -154,6 +154,37 @@ class ClassTest extends IntegrationTestCase
         $this->service->delete($course['id'], 9999);
     }
 
+    public function testDeleteClassAlsoCascadesToEnrollments(): void
+    {
+        $user   = $this->createUser();
+        $course = $this->createCourse();
+        $class  = $this->createClass($course['id']);
+        $this->createEnrollment($user['id'], $class['id']);
+
+        $this->service->delete($course['id'], $class['id']);
+
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM enrollments WHERE course_class_id = :id');
+        $stmt->execute(['id' => $class['id']]);
+        $this->assertSame(0, (int)$stmt->fetchColumn(), 'Matrículas devem ser removidas via CASCADE ao deletar a turma');
+    }
+
+    public function testCreateClassWithSameDateAllowed(): void
+    {
+        $course = $this->createCourse();
+        $today  = date('Y-m-d');
+
+        $class = $this->service->create($course['id'], [
+            'title'      => 'Turma Dia Único',
+            'slots'      => 10,
+            'status'     => 'disponivel',
+            'start_date' => $today,
+            'end_date'   => $today,
+        ]);
+
+        $this->assertSame($today, $class['start_date']);
+        $this->assertSame($today, $class['end_date']);
+    }
+
     public function testOneCourseCanHaveMultipleClasses(): void
     {
         $course = $this->createCourse();

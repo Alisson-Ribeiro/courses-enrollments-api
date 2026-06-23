@@ -135,4 +135,33 @@ class ClassRepositoryTest extends IntegrationTestCase
 
         $this->assertNull($result);
     }
+
+    public function testLockByIdReturnsExistingClass(): void
+    {
+        $class = $this->createClass((int)$this->course['id'], ['title' => 'Turma Lock']);
+
+        $result = $this->repository->lockById((int)$class['id']);
+
+        $this->assertIsArray($result);
+        $this->assertSame((int)$class['id'], (int)$result['id']);
+        $this->assertSame('Turma Lock', $result['title']);
+    }
+
+    public function testLockByIdReturnsNullForNonExistent(): void
+    {
+        $result = $this->repository->lockById(9999);
+
+        $this->assertNull($result);
+    }
+
+    public function testUpdateWithSameValuesDoesNotChangeUpdatedAt(): void
+    {
+        $class = $this->createClass((int)$this->course['id'], ['title' => 'Título Fixo', 'slots' => 10]);
+        $updatedAtBefore = $class['updated_at'];
+
+        $result = $this->repository->update((int)$class['id'], ['title' => 'Título Fixo', 'slots' => 10]);
+
+        $this->assertSame('Título Fixo', $result['title']);
+        $this->assertSame($updatedAtBefore, $result['updated_at'], 'updated_at não deve mudar quando os valores são idênticos');
+    }
 }

@@ -84,6 +84,12 @@ class UserTest extends IntegrationTestCase
         $this->service->delete(9999);
     }
 
+    public function testCreateUserWithWhitespaceOnlyNameThrowsException(): void
+    {
+        $this->expectException(ValidationException::class);
+        $this->service->create(['name' => '   ', 'email' => 'valido@example.com']);
+    }
+
     public function testDeleteUserAlsoDeletesEnrollments(): void
     {
         $user   = $this->createUser();

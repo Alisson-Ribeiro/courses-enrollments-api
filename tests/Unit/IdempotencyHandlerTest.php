@@ -89,6 +89,25 @@ class IdempotencyHandlerTest extends TestCase
         $this->assertTrue(IdempotencyHandler::isValidKey(str_repeat('a', 128)));
     }
 
+    public function testStoreOverwritesPreviousValue(): void
+    {
+        $key = $this->uniqueKey();
+        IdempotencyHandler::store($key, 201, '{"id":1}');
+        IdempotencyHandler::store($key, 200, '{"id":2}');
+
+        $result = IdempotencyHandler::get($key);
+        $this->assertNotNull($result);
+        $this->assertSame(200, $result['status']);
+        $this->assertSame('{"id":2}', $result['body']);
+    }
+
+    public function testReserveReturnsFalseWhenRedisUnavailable(): void
+    {
+        // Sem REDIS_HOST configurado, reserve() retorna false (fail-open)
+        $key = $this->uniqueKey();
+        $this->assertFalse(IdempotencyHandler::reserve($key));
+    }
+
     public function testCorruptFileReturnsNull(): void
     {
         $key  = $this->uniqueKey();
