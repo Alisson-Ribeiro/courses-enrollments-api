@@ -7,6 +7,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use App\Controllers\ClassController;
 use App\Controllers\CourseController;
 use App\Controllers\EnrollmentController;
+use App\Controllers\HealthController;
 use App\Controllers\UserController;
 use App\Exceptions\BusinessRuleException;
 use App\Exceptions\NotFoundException;
@@ -64,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $router = new Router();
 
-$router->get('/api/health', fn($p) => Response::json(['status' => 'ok']));
+$router->get('/api/health', [HealthController::class, 'index']);
 
 $router->get('/api/courses', [CourseController::class, 'index']);
 $router->post('/api/courses', [CourseController::class, 'store']);

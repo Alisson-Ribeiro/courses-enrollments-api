@@ -1,6 +1,6 @@
 FROM php:8.3-fpm
 
-RUN apt-get update && apt-get install -y libpq-dev unzip git curl \
+RUN apt-get update && apt-get install -y -o Acquire::Retries=3 libpq-dev unzip curl \
     && docker-php-ext-install pdo pdo_pgsql opcache \
     && pecl install apcu redis \
     && docker-php-ext-enable apcu redis \
